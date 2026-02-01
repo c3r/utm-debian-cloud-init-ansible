@@ -1,0 +1,14 @@
+- name: Install base packages
+  apt:
+    name:
+      - htop
+      - nginx
+      - python3
+    state: present
+    update_cache: yes
+
+- name: Enable nginx
+  systemd:
+    name: nginx
+    enabled: true
+    state: started

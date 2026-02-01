@@ -1,0 +1,10 @@
+dev_ssh_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF/fMaEyNAnCt4zD5dtVGn1r2Q8D/vmk0ireIzGjctNJ tomasz.bielewicz@pm.me"
+vms:
+  - name: jumpbox
+    ip: 192.168.64.101
+  - name: node0
+    ip: 192.168.64.102
+  - name: node1
+    ip: 192.168.64.103
+  - name: server
+    ip: 192.168.64.104

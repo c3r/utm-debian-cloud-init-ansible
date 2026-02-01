@@ -1,0 +1,69 @@
+- hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    repo_root: "{{ playbook_dir | dirname }}"
+    cloud_init_src: "{{ repo_root }}/cloud-init"
+    cloud_init_build: "{{ repo_root }}/build/cloud-init"
+
+  vars_files:
+    - "{{ cloud_init_src }}/vars.yml"
+
+  pre_tasks:
+    - name: Validate ssh_key is defined
+      assert:
+        that:
+          - dev_ssh_key is defined
+          - dev_ssh_key | length > 0
+        fail_msg: "dev_ssh_key is missing or empty in cloud-init/vars.yml"
+
+    - name: Validate all VMs have IPs
+      assert:
+        that:
+          - item.ip is defined
+          - item.ip | length > 0
+        fail_msg: "VM {{ item.name }} is missing an IP address"
+      loop: "{{ vms }}"
+
+    - name: Validate IP format (IPv4)
+      assert:
+        that:
+          - item.ip is match('^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$')
+        fail_msg: "Invalid IP format for {{ item.name }}: {{ item.ip }}"
+      loop: "{{ vms }}"
+
+    - name: Check for duplicate IPs
+      assert:
+        that:
+          - (vms | map(attribute='ip') | list | unique | length) == (vms | length)
+        fail_msg: "Duplicate IP addresses detected in cloud-init/vars.yml"
+
+  tasks:
+
+    - name: Ensure cloud-init build directories exist
+      file:
+        path: "{{ cloud_init_build }}/{{ item.name }}"
+        state: directory
+        mode: "0755"
+      loop: "{{ vms }}"
+
+    - name: Generate user-data
+      template:
+        src: "{{ cloud_init_src }}/templates/user-data.tpl"
+        dest: "{{ cloud_init_build }}/{{ item.name }}/user-data"
+        mode: "0644"
+      loop: "{{ vms }}"
+      vars:
+        hostname: "{{ item.name }}"
+        ip: "{{ item.ip }}"
+        ssh_key: "{{ dev_ssh_key }}"
+    - name: Generate meta-data
+      template:
+        src: "{{ cloud_init_src }}/templates/meta-data.tpl"
+        dest: "{{ cloud_init_build }}/{{ item.name }}/meta-data"
+        mode: "0644"
+      loop: "{{ vms }}"
+      vars:
+        hostname: "{{ item.name }}"
+        instance_id: "{{ item.name }}"
