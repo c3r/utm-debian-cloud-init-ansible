@@ -16,54 +16,62 @@
         that:
           - dev_ssh_key is defined
           - dev_ssh_key | length > 0
-        fail_msg: "dev_ssh_key is missing or empty in cloud-init/vars.yml"
-
-    - name: Validate all VMs have IPs
-      assert:
-        that:
-          - item.ip is defined
-          - item.ip | length > 0
-        fail_msg: "VM {{ item.name }} is missing an IP address"
-      loop: "{{ vms }}"
+        fail_msg: "The SSH key 'dev_ssh_key' is missing or empty in cloud-init/vars.yml. Please ensure it is defined and non-empty."
 
     - name: Validate IP format (IPv4)
       assert:
         that:
-          - item.ip is match('^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$')
-        fail_msg: "Invalid IP format for {{ item.name }}: {{ item.ip }}"
-      loop: "{{ vms }}"
+          - item.value.ip is match('^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$')
+        fail_msg: "Invalid IP format for {{ item.key }}: {{ item.value.ip }}. Ensure it follows the IPv4 format (e.g., 192.168.1.1)."
+      loop: "{{ nodes | dict2items }}"
 
-    - name: Check for duplicate IPs
+    - name: Validate static IPs
+      when: network_mode == "static"
       assert:
         that:
-          - (vms | map(attribute='ip') | list | unique | length) == (vms | length)
-        fail_msg: "Duplicate IP addresses detected in cloud-init/vars.yml"
+          - nodes | dict2items | map(attribute='value.ip') | unique | length
+            == nodes | length
+        fail_msg: "Duplicate IP addresses detected in the 'nodes' variable. Ensure all IPs are unique."
 
   tasks:
-
-    - name: Ensure cloud-init build directories exist
+    - name: Ensure parent directory exists
       file:
-        path: "{{ cloud_init_build }}/{{ item.name }}"
+        path: "{{ cloud_init_build }}"
         state: directory
-        mode: "0755"
-      loop: "{{ vms }}"
+        mode: "0777"
 
-    - name: Generate user-data
+    - name: Create build directories
+      file:
+        path: "{{ cloud_init_build }}/{{ item.key }}"
+        state: directory
+        mode: "0777"
+      loop: "{{ nodes | dict2items }}"
+
+    - name: Render user-data
       template:
-        src: "{{ cloud_init_src }}/templates/user-data.tpl"
-        dest: "{{ cloud_init_build }}/{{ item.name }}/user-data"
+        src: "{{ cloud_init_src }}/templates/user-data.yml.j2"
+        dest: "{{ cloud_init_build }}/{{ item.key }}/user-data"
         mode: "0644"
-      loop: "{{ vms }}"
+      loop: "{{ nodes | dict2items }}"
       vars:
-        hostname: "{{ item.name }}"
-        ip: "{{ item.ip }}"
+        name: "{{ item.key }}"
         ssh_key: "{{ dev_ssh_key }}"
-    - name: Generate meta-data
+        ip: "{{ item.value.ip | default(omit) }}"
+
+    - name: Render meta-data
       template:
-        src: "{{ cloud_init_src }}/templates/meta-data.tpl"
-        dest: "{{ cloud_init_build }}/{{ item.name }}/meta-data"
+        src: "{{ cloud_init_src }}/templates/meta-data.yml.j2"
+        dest: "{{ cloud_init_build }}/{{ item.key }}/meta-data"
         mode: "0644"
-      loop: "{{ vms }}"
+      loop: "{{ nodes | dict2items }}"
       vars:
-        hostname: "{{ item.name }}"
-        instance_id: "{{ item.name }}"
+        hostname: "{{ item.key }}"
+        instance_id: "{{ item.key }}"
+
+    - name: Build seed ISO
+      command: >
+        cloud-localds
+        {{ cloud_init_build }}/{{ item.key }}/{{ item.key }}.iso
+        {{ cloud_init_build }}/{{ item.key }}/user-data
+        {{ cloud_init_build }}/{{ item.key }}/meta-data
+      loop: "{{ nodes | dict2items }}"

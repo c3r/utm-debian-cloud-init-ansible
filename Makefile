@@ -1,63 +1,25 @@
-# =========================
-# Configuration
-# =========================
+.PHONY: help validate apply disks run clean
 
-ROOT_DIR := $(shell git rev-parse --show-toplevel)
-ANSIBLE_PLAYBOOK := ansible-playbook
-PLAYBOOK := $(ROOT_DIR)/scripts/generate-cloud-init.yml
-SEED_SCRIPT := $(ROOT_DIR)/scripts/build-seed-isos.sh
+help:
+	@echo "Targets:"
+	@echo "  make validate  - validate vars and templates"
+	@echo "  make apply     - generate cloud-init + disks"
+	@echo "  make run       - run all VMs"
+	@echo "  make clean     - remove build artifacts"
 
-# Colors
-RESET  := \033[0m
-BOLD   := \033[1m
-CYAN   := \033[36m
-GREEN  := \033[32m
-YELLOW := \033[33m
-RED    := \033[31m
+validate:
+	ansible-playbook scripts/generate-cloud-init.yml --check || { echo "Validation failed."; exit 1; }
 
-.DEFAULT_GOAL := help
+apply: validate disks
+	ansible-playbook scripts/generate-cloud-init.yml || { echo "Apply failed."; exit 1; }
 
-# =========================
-# Help
-# =========================
-.PHONY: help
-help: ## Show this help
-	@echo ""
-	@echo "$(BOLD)Available targets$(RESET)"
-	@echo ""
-	@awk 'BEGIN {FS = ":.*##"} \
-	/^[a-zA-Z0-9_-]+:.*##/ { \
-		printf "  $(CYAN)%-18s$(RESET) %s\n", $$1, $$2 \
-	}' $(MAKEFILE_LIST)
-	@echo ""
+disks:
+	./scripts/create-disks.sh $(shell pwd)/qemu/images/debian-12-genericcloud-arm64.qcow2 $(shell pwd)/build/disks
 
-# =========================
-# Validation
-# =========================
-.PHONY: validate
-validate: ## Validate cloud-init configuration (no files written)
-	@echo "$(YELLOW)==> Validating configuration$(RESET)"
-	$(ANSIBLE_PLAYBOOK) $(PLAYBOOK) --check
+run:
+	for disk in jumpbox node0 node1 server; do \
+	  ./qemu/run.sh $$disk build/disks/$$disk.qcow2 build/cloud-init/$$disk/$$disk.iso || { echo "Failed to run VM $$disk."; exit 1; }; \
+	done
 
-# =========================
-# Apply / Generate
-# =========================
-.PHONY: apply
-apply: ## Generate cloud-init files and seed ISOs
-	@echo "$(GREEN)==> Generating cloud-init configs$(RESET)"
-	$(ANSIBLE_PLAYBOOK) $(PLAYBOOK)
-	@echo "$(GREEN)==> Building seed ISOs$(RESET)"
-	$(SEED_SCRIPT)
-
-# Alias
-.PHONY: cloud-init
-cloud-init: apply ## Alias for apply
-
-# =========================
-# Cleanup
-# =========================
-.PHONY: clean
-clean: ## Remove generated cloud-init artifacts
-	@echo "$(RED)==> Cleaning generated files$(RESET)"
-	rm -rf build/
-
+clean:
+	rm -rf build/ || { echo "Clean failed."; exit 1; }
