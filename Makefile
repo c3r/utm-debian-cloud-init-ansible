@@ -1,4 +1,4 @@
-.PHONY: help validate-cloud-init generate-cloud-init create-disks run setup clean
+.PHONY: help validate-cloud-init generate-cloud-init create-disks run setup clean kill-vms
 
 help:
 	@echo "Targets:"
@@ -6,7 +6,8 @@ help:
 	@echo "  make generate-cloud-init - generate cloud-init + disks"
 	@echo "  make setup              - run setup sequentially"
 	@echo "  make run                - run all VMs in parallel"
-	@echo "  make clean             - remove build artifacts"
+	@echo "  make kill-vms           - force kill all running QEMU VMs"
+	@echo "  make clean              - remove build artifacts"
 
 validate-cloud-init:
 	ansible-playbook generate-cloud-init.yml --check
@@ -22,6 +23,9 @@ setup: generate-cloud-init
 
 run: setup
 	ansible-playbook run.yml
+
+kill-vms:
+	./kill-vms.sh
 
 clean:
 	rm -rf build/

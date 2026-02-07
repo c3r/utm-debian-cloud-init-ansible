@@ -5,12 +5,16 @@
 
   tasks:
     - name: Start VMs (background)
-      include_tasks: tasks/start-vm.yml
+      shell: |
+        {{ vm_launch_command }}
       vars:
         vm_name: "{{ item }}"
       loop: "{{ nodes | dict2items | map(attribute='key') | list }}"
       loop_control:
         label: "{{ item }}"
+      async: 3600
+      poll: 0
+      delegate_to: localhost
 
     - name: Report started VMs
       debug:

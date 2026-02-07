@@ -16,7 +16,7 @@ if [[ "$EUID" -ne 0 ]]; then
 fi
 
 cat > /etc/sudoers.d/qemu-run <<EOF
-${USER_NAME} ALL=(root) NOPASSWD: /usr/local/bin/qemu-system-x86_64 *
+${USER_NAME} ALL=(root) NOPASSWD: /opt/homebrew/bin/qemu-system-x86_64 *
 EOF
 
 chmod 440 /etc/sudoers.d/qemu-run

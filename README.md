@@ -20,7 +20,15 @@ Edit [group_vars/all.yml](group_vars/all.yml) to set:
 
 Place the Debian cloud image at the path defined by `base_image_path` (default: `build/images/debian-12-genericcloud-amd64.qcow2`).
 
-### Setup
+## Customization
+
+Key variables in `group_vars/all.yml` can be customized for different hypervisors:
+
+- `vm_launch_command`: Full hypervisor launch command (default: QEMU). Customize for KVM, Xen, Hyper-V, etc.
+- `disk_create_command`: Disk creation tool (default: qemu-img). Swap for LVM, Ceph, etc.
+- `ssh_port`: SSH port for VM access (default: 22)
+
+## Setup
 1. Allow passwordless QEMU execution (required for vmnet-bridged):
         - `sudo ./setup-sudo.sh`
 2. Generate artifacts and disks:
@@ -29,5 +37,14 @@ Place the Debian cloud image at the path defined by `base_image_path` (default: 
         - `make setup`
 4. Run all VMs in parallel:
         - `make run`
- 
+
+## Cleanup
+
+To force-kill all running VMs:
+
+```bash
+make kill-vms
+```
+
+Or manually: `./kill-vms.sh`
 

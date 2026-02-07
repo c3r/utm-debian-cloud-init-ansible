@@ -7,6 +7,9 @@ dev_ssh_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF/fMaEyNAnCt4zD5dtVGn1r2Q8D/v
 # Default username created by cloud-init and used by Ansible
 cloud_user: dev
 
+# SSH port for connecting to VMs
+ssh_port: 22
+
 
 # Network configuration
 # ---------------------
@@ -47,6 +50,29 @@ base_image_name: debian-12-genericcloud-amd64.qcow2
 # Absolute path to the base cloud image
 base_image_path: "{{ playbook_dir }}/qemu/images/{{ base_image_name }}"
 
+# Disk creation command (hypervisor-agnostic)
+# Customize this to use different disk tools or formats
+# Available variables: {{ base_image_path }}, {{ target_image }}
+disk_create_command: qemu-img create -f qcow2 -b "{{ base_image_path }}" -F qcow2 "{{ target_image }}"
+
+
+# VM launch command (hypervisor-agnostic)
+# Customize this to use different hypervisors (QEMU, KVM, Xen, Hyper-V, etc.)
+# Available variables: {{ vm_name }}, {{ playbook_dir }}, {{ disk_dir }}, {{ cloud_init_dir }}, {{ bridge_interface }}, {{ nodes[vm_name].mac }}
+vm_launch_command: |
+  sudo -n qemu-system-x86_64 \
+    -machine pc \
+    -cpu max \
+    -m 2048 \
+    -smp 2 \
+    -nographic \
+    -drive file={{ playbook_dir }}/{{ disk_dir }}/{{ vm_name }}.qcow2,if=virtio,format=qcow2 \
+    -drive file={{ playbook_dir }}/{{ cloud_init_dir }}/{{ vm_name }}/{{ vm_name }}.iso,if=virtio,media=cdrom,readonly=on \
+    -netdev vmnet-bridged,id=net0,ifname={{ bridge_interface }} \
+    -device virtio-net-pci,netdev=net0,mac={{ nodes[vm_name].mac }} \
+    -boot order=c \
+    -serial mon:stdio \
+    > /tmp/qemu-{{ vm_name }}.log 2>&1
 
 # VM nodes
 # --------

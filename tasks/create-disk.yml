@@ -6,7 +6,9 @@
     mode: "0777"
 
 - name: Create disk image with backing file
-  command:
-    cmd: >-
-      qemu-img create -f qcow2 -b "{{ base_image_path }}" -F qcow2 "{{ target_image }}"
+  shell: "{{ disk_create_command }}"
+  args:
     creates: "{{ target_image }}"
+  environment:
+    base_image_path: "{{ base_image_path }}"
+    target_image: "{{ target_image }}"
