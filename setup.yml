@@ -1,0 +1,53 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Build dynamic inventory from vars
+      add_host:
+        name: "{{ item.key }}"
+        ansible_host: "{{ item.value.ip }}"
+        ansible_user: "{{ cloud_user }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+      loop: "{{ nodes | dict2items }}"
+
+- hosts: all
+  serial: 1
+  gather_facts: false
+
+  tasks:
+    - name: Start VM (background)
+      include_tasks: tasks/start-vm.yml
+      vars:
+        vm_name: "{{ inventory_hostname }}"
+      register: qemu_job
+
+    - name: HEALTHCHECK - Wait for SSH
+      wait_for:
+        host: "{{ ansible_host }}"
+        port: 22
+        timeout: 120
+        state: started
+      delegate_to: localhost
+
+    - name: Wait for cloud-init to finish
+      command: cloud-init status --wait
+      register: cloud_init_status
+
+    - name: Power off VM
+      command: sudo poweroff
+      ignore_errors: true
+
+    - name: Wait for QEMU process to exit
+      async_status:
+        jid: "{{ qemu_job.ansible_job_id }}"
+      register: qemu_status
+      until: qemu_status.finished
+      retries: 60
+      delay: 2
+      delegate_to: localhost
+
+    - name: Report setup completion
+      debug:
+        msg: "{{ inventory_hostname }} configured (cloud-init: {{ cloud_init_status.stdout | default('unknown') }})"

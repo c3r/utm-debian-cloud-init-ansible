@@ -1,63 +1,27 @@
-# =========================
-# Configuration
-# =========================
+.PHONY: help validate-cloud-init generate-cloud-init create-disks run setup clean
 
-ROOT_DIR := $(shell git rev-parse --show-toplevel)
-ANSIBLE_PLAYBOOK := ansible-playbook
-PLAYBOOK := $(ROOT_DIR)/scripts/generate-cloud-init.yml
-SEED_SCRIPT := $(ROOT_DIR)/scripts/build-seed-isos.sh
+help:
+	@echo "Targets:"
+	@echo "  make validate-cloud-init - validate vars and templates"
+	@echo "  make generate-cloud-init - generate cloud-init + disks"
+	@echo "  make setup              - run setup sequentially"
+	@echo "  make run                - run all VMs in parallel"
+	@echo "  make clean             - remove build artifacts"
 
-# Colors
-RESET  := \033[0m
-BOLD   := \033[1m
-CYAN   := \033[36m
-GREEN  := \033[32m
-YELLOW := \033[33m
-RED    := \033[31m
+validate-cloud-init:
+	ansible-playbook generate-cloud-init.yml --check
 
-.DEFAULT_GOAL := help
+create-disks:
+	ansible-playbook create-disks.yml
 
-# =========================
-# Help
-# =========================
-.PHONY: help
-help: ## Show this help
-	@echo ""
-	@echo "$(BOLD)Available targets$(RESET)"
-	@echo ""
-	@awk 'BEGIN {FS = ":.*##"} \
-	/^[a-zA-Z0-9_-]+:.*##/ { \
-		printf "  $(CYAN)%-18s$(RESET) %s\n", $$1, $$2 \
-	}' $(MAKEFILE_LIST)
-	@echo ""
+generate-cloud-init: validate-cloud-init create-disks
+	ansible-playbook generate-cloud-init.yml
 
-# =========================
-# Validation
-# =========================
-.PHONY: validate
-validate: ## Validate cloud-init configuration (no files written)
-	@echo "$(YELLOW)==> Validating configuration$(RESET)"
-	$(ANSIBLE_PLAYBOOK) $(PLAYBOOK) --check
+setup: generate-cloud-init
+	ansible-playbook setup.yml
 
-# =========================
-# Apply / Generate
-# =========================
-.PHONY: apply
-apply: ## Generate cloud-init files and seed ISOs
-	@echo "$(GREEN)==> Generating cloud-init configs$(RESET)"
-	$(ANSIBLE_PLAYBOOK) $(PLAYBOOK)
-	@echo "$(GREEN)==> Building seed ISOs$(RESET)"
-	$(SEED_SCRIPT)
+run: setup
+	ansible-playbook run.yml
 
-# Alias
-.PHONY: cloud-init
-cloud-init: apply ## Alias for apply
-
-# =========================
-# Cleanup
-# =========================
-.PHONY: clean
-clean: ## Remove generated cloud-init artifacts
-	@echo "$(RED)==> Cleaning generated files$(RESET)"
+clean:
 	rm -rf build/
-

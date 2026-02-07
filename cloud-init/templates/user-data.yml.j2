@@ -1,0 +1,18 @@
+#cloud-config
+hostname: {{ name }}
+
+users:
+  - name: {{ cloud_user }}
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - {{ ssh_key }}
+
+package_update: true
+package_upgrade: false
+
+power_state:
+  mode: poweroff
+  delay: now
+  message: "Cloud-init finished. Powering off."
+{% endif %}
