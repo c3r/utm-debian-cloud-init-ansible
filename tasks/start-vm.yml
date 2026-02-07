@@ -1,0 +1,19 @@
+---
+- name: Start VM (background)
+  shell: |
+    sudo -n qemu-system-x86_64 \
+      -machine pc \
+      -cpu max \
+      -m 2048 \
+      -smp 2 \
+      -nographic \
+      -drive file={{ playbook_dir }}/{{ disk_dir }}/{{ vm_name }}.qcow2,if=virtio,format=qcow2 \
+      -drive file={{ playbook_dir }}/{{ cloud_init_dir }}/{{ vm_name }}/{{ vm_name }}.iso,if=virtio,media=cdrom,readonly=on \
+      -netdev vmnet-bridged,id=net0,ifname={{ bridge_interface }} \
+      -device virtio-net-pci,netdev=net0,mac={{ nodes[vm_name].mac }} \
+      -boot order=c \
+      -serial mon:stdio \
+      > /tmp/qemu-{{ vm_name }}.log 2>&1
+  async: 3600
+  poll: 0
+  delegate_to: localhost

@@ -1,0 +1,66 @@
+---
+# SSH and user configuration
+# --------------------------
+# Public SSH key injected into the VM for the initial user
+dev_ssh_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF/fMaEyNAnCt4zD5dtVGn1r2Q8D/vmk0ireIzGjctNJ tomasz.bielewicz@pm.me"
+
+# Default username created by cloud-init and used by Ansible
+cloud_user: dev
+
+
+# Network configuration
+# ---------------------
+# Interface name inside the guest (netplan uses this)
+network_interface: ens3
+
+# Host bridge interface used by vmnet-bridged on macOS
+bridge_interface: en0
+
+# DNS servers configured inside the guests
+dns:
+  - 1.1.1.1
+  - 8.8.8.8
+# Default gateway for the guest network
+gateway: 192.168.0.1
+
+
+# Build paths (relative to repo root)
+# -----------------------------------
+# Where per-VM disk images are created
+disk_dir: build/disks
+
+# Where rendered cloud-init configs and seed ISOs are stored
+cloud_init_dir: build/cloud-init
+
+# Source directory for cloud-init templates
+cloud_init_src: cloud-init
+
+# Disk image format used for VM disks
+disk_format: qcow2
+
+
+# QEMU settings
+# -------------
+# Base cloud image filename (stored under build/images)
+base_image_name: debian-12-genericcloud-amd64.qcow2
+
+# Absolute path to the base cloud image
+base_image_path: "{{ playbook_dir }}/build/images/{{ base_image_name }}"
+
+
+# VM nodes
+# --------
+# Map of VM names to static IPs and fixed MAC addresses
+nodes:
+  jumpbox:
+    ip: 192.168.0.10
+    mac: "52:54:00:12:34:10"
+  node0:
+    ip: 192.168.0.11
+    mac: "52:54:00:12:34:11"
+  node1:
+    ip: 192.168.0.12
+    mac: "52:54:00:12:34:12"
+  server:
+    ip: 192.168.0.20
+    mac: "52:54:00:12:34:20"

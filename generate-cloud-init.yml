@@ -2,14 +2,6 @@
   connection: local
   gather_facts: false
 
-  vars:
-    repo_root: "{{ playbook_dir | dirname }}"
-    cloud_init_src: "{{ repo_root }}/cloud-init"
-    cloud_init_build: "{{ repo_root }}/build/cloud-init"
-
-  vars_files:
-    - "{{ cloud_init_src }}/vars.yml"
-
   pre_tasks:
     - name: Validate ssh_key is defined
       assert:
@@ -35,21 +27,21 @@
   tasks:
     - name: Ensure parent directory exists
       file:
-        path: "{{ cloud_init_build }}"
+        path: "{{ playbook_dir }}/{{ cloud_init_dir }}"
         state: directory
         mode: "0777"
 
     - name: Create build directories
       file:
-        path: "{{ cloud_init_build }}/{{ item.key }}"
+        path: "{{ playbook_dir }}/{{ cloud_init_dir }}/{{ item.key }}"
         state: directory
         mode: "0777"
       loop: "{{ nodes | dict2items }}"
 
     - name: Render user-data
       template:
-        src: "{{ cloud_init_src }}/templates/user-data.yml.j2"
-        dest: "{{ cloud_init_build }}/{{ item.key }}/user-data"
+        src: "{{ playbook_dir }}/{{ cloud_init_src }}/templates/user-data.yml.j2"
+        dest: "{{ playbook_dir }}/{{ cloud_init_dir }}/{{ item.key }}/user-data"
         mode: "0644"
       loop: "{{ nodes | dict2items }}"
       vars:
@@ -59,8 +51,8 @@
 
     - name: Render meta-data
       template:
-        src: "{{ cloud_init_src }}/templates/meta-data.yml.j2"
-        dest: "{{ cloud_init_build }}/{{ item.key }}/meta-data"
+        src: "{{ playbook_dir }}/{{ cloud_init_src }}/templates/meta-data.yml.j2"
+        dest: "{{ playbook_dir }}/{{ cloud_init_dir }}/{{ item.key }}/meta-data"
         mode: "0644"
       loop: "{{ nodes | dict2items }}"
       vars:
@@ -69,8 +61,8 @@
 
     - name: Render network-config
       template:
-        src: "{{ cloud_init_src }}/templates/network-config.yml.j2"
-        dest: "{{ cloud_init_build }}/{{ item.key }}/network-config"
+        src: "{{ playbook_dir }}/{{ cloud_init_src }}/templates/network-config.yml.j2"
+        dest: "{{ playbook_dir }}/{{ cloud_init_dir }}/{{ item.key }}/network-config"
         mode: "0644"
       loop: "{{ nodes | dict2items }}"
       vars:
@@ -83,8 +75,8 @@
         -joliet \
         -rock \
         -input-charset utf-8 \
-        -output {{ cloud_init_build }}/{{ item.key }}/{{ item.key }}.iso \
-        {{ cloud_init_build }}/{{ item.key }}/user-data \
-        {{ cloud_init_build }}/{{ item.key }}/meta-data \
-        {{ cloud_init_build }}/{{ item.key }}/network-config
+        -output {{ playbook_dir }}/{{ cloud_init_dir }}/{{ item.key }}/{{ item.key }}.iso \
+        {{ playbook_dir }}/{{ cloud_init_dir }}/{{ item.key }}/user-data \
+        {{ playbook_dir }}/{{ cloud_init_dir }}/{{ item.key }}/meta-data \
+        {{ playbook_dir }}/{{ cloud_init_dir }}/{{ item.key }}/network-config
       loop: "{{ nodes | dict2items }}"

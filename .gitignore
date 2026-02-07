@@ -5,7 +5,7 @@
 /build/
 
 # QEMU images
-/qemu/images/
+/build/images/
 *.qcow2
 *.iso
 

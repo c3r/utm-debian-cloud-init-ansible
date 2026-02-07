@@ -9,19 +9,19 @@ help:
 	@echo "  make clean             - remove build artifacts"
 
 validate-cloud-init:
-	ansible-playbook scripts/generate-cloud-init.yml --check || { echo "Validation failed."; exit 1; }
+	ansible-playbook generate-cloud-init.yml --check
 
 create-disks:
-	ansible-playbook scripts/create-disks.yml || { echo "Disk creation failed."; exit 1; }
+	ansible-playbook create-disks.yml
 
 generate-cloud-init: validate-cloud-init create-disks
-	ansible-playbook scripts/generate-cloud-init.yml || { echo "Create failed."; exit 1; }
+	ansible-playbook generate-cloud-init.yml
 
 setup: generate-cloud-init
-	ansible-playbook scripts/setup.yml || { echo "Setup failed."; exit 1; }
+	ansible-playbook setup.yml
 
 run: setup
-	ansible-playbook scripts/run.yml || { echo "Run failed."; exit 1; }
+	ansible-playbook run.yml
 
 clean:
-	rm -rf build/ || { echo "Clean failed."; exit 1; }
+	rm -rf build/

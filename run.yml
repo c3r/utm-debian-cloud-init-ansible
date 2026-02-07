@@ -1,0 +1,17 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Start VMs (background)
+      include_tasks: tasks/start-vm.yml
+      vars:
+        vm_name: "{{ item }}"
+      loop: "{{ nodes | dict2items | map(attribute='key') | list }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Report started VMs
+      debug:
+        msg: "Started VM(s): {{ nodes | dict2items | map(attribute='key') | join(', ') }}"

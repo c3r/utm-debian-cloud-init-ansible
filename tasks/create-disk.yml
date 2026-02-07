@@ -1,0 +1,12 @@
+---
+- name: Ensure target disk directory exists
+  file:
+    path: "{{ target_image | dirname }}"
+    state: directory
+    mode: "0777"
+
+- name: Create disk image with backing file
+  command:
+    cmd: >-
+      qemu-img create -f qcow2 -b "{{ base_image_path }}" -F qcow2 "{{ target_image }}"
+    creates: "{{ target_image }}"
