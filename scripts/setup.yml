@@ -1,0 +1,75 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    repo_root: "{{ playbook_dir | dirname }}"
+
+  vars_files:
+    - "{{ repo_root }}/cloud-init/vars.yml"
+
+  tasks:
+    - name: Build dynamic inventory from vars
+      add_host:
+        name: "{{ item.key }}"
+        ansible_host: "{{ item.value.ip }}"
+        ansible_user: "{{ cloud_user }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+      loop: "{{ nodes | dict2items }}"
+
+- hosts: all
+  serial: 1
+  gather_facts: false
+
+  vars_files:
+    - "{{ repo_root }}/cloud-init/vars.yml"
+
+  vars:
+    repo_root: "{{ playbook_dir | dirname }}"
+    run_script: "{{ repo_root }}/qemu/run.sh"
+    disk_dir: "{{ repo_root }}/build/disks"
+    cloud_init_dir: "{{ repo_root }}/build/cloud-init"
+    net_mode: "bridged"
+
+  tasks:
+    - name: Start VM (background)
+      shell: >-
+        sudo -n {{ run_script }} {{ inventory_hostname }} {{ disk_dir }}/{{ inventory_hostname }}.qcow2 {{ cloud_init_dir }}/{{ inventory_hostname }}/{{ inventory_hostname }}.iso
+        > /tmp/qemu-{{ inventory_hostname }}.log 2>&1
+      environment:
+        NET_MODE: "{{ net_mode }}"
+        NET_IF: "{{ bridge_interface }}"
+      async: 3600
+      poll: 0
+      register: qemu_job
+      delegate_to: localhost
+
+    - name: HEALTHCHECK - Wait for SSH
+      wait_for:
+        host: "{{ ansible_host }}"
+        port: 22
+        timeout: 120
+        state: started
+      delegate_to: localhost
+
+    - name: Wait for cloud-init to finish
+      command: cloud-init status --wait
+      register: cloud_init_status
+
+    - name: Power off VM
+      command: sudo poweroff
+      ignore_errors: true
+
+    - name: Wait for QEMU process to exit
+      async_status:
+        jid: "{{ qemu_job.ansible_job_id }}"
+      register: qemu_status
+      until: qemu_status.finished
+      retries: 60
+      delay: 2
+      delegate_to: localhost
+
+    - name: Report setup completion
+      debug:
+        msg: "{{ inventory_hostname }} configured (cloud-init: {{ cloud_init_status.stdout | default('unknown') }})"

@@ -1,2 +1,30 @@
+# macOS
+.DS_Store
+
+# Build artifacts
 /build/
-/qemu/images
+
+# QEMU images
+/qemu/images/
+*.qcow2
+*.iso
+
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ansible
+*.retry

@@ -1,0 +1,19 @@
+version: 2
+ethernets:
+  {{ network_interface }}:
+{% if network_mode == "dhcp" %}
+    dhcp4: true
+    dhcp6: false
+    accept-ra: false
+{% else %}
+    dhcp4: false
+    dhcp6: false
+    accept-ra: false
+    addresses:
+      - {{ ip }}/24
+    routes:
+      - to: default
+        via: {{ gateway }}
+    nameservers:
+      addresses: {{ dns }}
+{% endif %}

@@ -2,7 +2,7 @@
 hostname: {{ name }}
 
 users:
-  - name: debian
+  - name: {{ cloud_user }}
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
     ssh_authorized_keys:
@@ -11,21 +11,37 @@ users:
 package_update: true
 package_upgrade: false
 
+# NOTE: BEGIN fallback network config (dsmode=local only).
+# Deprecated in this project (we use network-config for dsmode=net).
+# Marked for deletion once fully validated.
 {% if network_mode == "dhcp" %}
 network:
   version: 2
   ethernets:
-    eth0:
+    {{ network_interface }}:
       dhcp4: true
+      dhcp6: false
+      accept-ra: false
 {% else %}
 network:
   version: 2
   ethernets:
-    eth0:
+    {{ network_interface }}:
       dhcp4: false
+      dhcp6: false
+      accept-ra: false
       addresses:
         - {{ ip }}/24
-      gateway4: {{ gateway }}
+      routes:
+        - to: default
+          via: {{ gateway }}
       nameservers:
         addresses: {{ dns }}
+{% endif %}
+{% if poweroff_on_finish | default(false) %}
+# NOTE: END fallback network config.
+power_state:
+  mode: poweroff
+  delay: now
+  message: "Cloud-init finished. Powering off."
 {% endif %}

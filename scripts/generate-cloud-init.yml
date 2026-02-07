@@ -68,10 +68,24 @@
         hostname: "{{ item.key }}"
         instance_id: "{{ item.key }}"
 
+    - name: Render network-config
+      template:
+        src: "{{ cloud_init_src }}/templates/network-config.yml.j2"
+        dest: "{{ cloud_init_build }}/{{ item.key }}/network-config"
+        mode: "0644"
+      loop: "{{ nodes | dict2items }}"
+      vars:
+        ip: "{{ item.value.ip | default(omit) }}"
+
     - name: Build seed ISO
       command: >
-        cloud-localds
-        {{ cloud_init_build }}/{{ item.key }}/{{ item.key }}.iso
-        {{ cloud_init_build }}/{{ item.key }}/user-data
-        {{ cloud_init_build }}/{{ item.key }}/meta-data
+        xorriso -as mkisofs \
+        -volid cidata \
+        -joliet \
+        -rock \
+        -input-charset utf-8 \
+        -output {{ cloud_init_build }}/{{ item.key }}/{{ item.key }}.iso \
+        {{ cloud_init_build }}/{{ item.key }}/user-data \
+        {{ cloud_init_build }}/{{ item.key }}/meta-data \
+        {{ cloud_init_build }}/{{ item.key }}/network-config
       loop: "{{ nodes | dict2items }}"

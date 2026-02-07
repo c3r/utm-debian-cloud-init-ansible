@@ -1,20 +1,23 @@
 dev_ssh_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF/fMaEyNAnCt4zD5dtVGn1r2Q8D/vmk0ireIzGjctNJ tomasz.bielewicz@pm.me"
 
+cloud_user: dev              # default cloud user created by cloud-init
+
 network_mode: static        # dhcp | static
+network_interface: ens3     # network interface name inside the VM
 bridge_interface: en0
 
 dns:
   - 1.1.1.1
   - 8.8.8.8
 
-gateway: 192.168.1.1
+gateway: 192.168.0.1
 
 nodes:
   jumpbox:
-    ip: 192.168.1.10
+    ip: 192.168.0.10
   node0:
-    ip: 192.168.1.11
+    ip: 192.168.0.11
   node1:
-    ip: 192.168.1.12
+    ip: 192.168.0.12
   server:
-    ip: 192.168.1.20
+    ip: 192.168.0.20

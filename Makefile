@@ -1,25 +1,27 @@
-.PHONY: help validate apply disks run clean
+.PHONY: help validate-cloud-init generate-cloud-init create-disks run setup clean
 
 help:
 	@echo "Targets:"
-	@echo "  make validate  - validate vars and templates"
-	@echo "  make apply     - generate cloud-init + disks"
-	@echo "  make run       - run all VMs"
-	@echo "  make clean     - remove build artifacts"
+	@echo "  make validate-cloud-init - validate vars and templates"
+	@echo "  make generate-cloud-init - generate cloud-init + disks"
+	@echo "  make setup              - run setup sequentially"
+	@echo "  make run                - run all VMs in parallel"
+	@echo "  make clean             - remove build artifacts"
 
-validate:
+validate-cloud-init:
 	ansible-playbook scripts/generate-cloud-init.yml --check || { echo "Validation failed."; exit 1; }
 
-apply: validate disks
-	ansible-playbook scripts/generate-cloud-init.yml || { echo "Apply failed."; exit 1; }
+create-disks:
+	ansible-playbook scripts/create-disks.yml || { echo "Disk creation failed."; exit 1; }
 
-disks:
-	./scripts/create-disks.sh $(shell pwd)/qemu/images/debian-12-genericcloud-arm64.qcow2 $(shell pwd)/build/disks
+generate-cloud-init: validate-cloud-init create-disks
+	ansible-playbook scripts/generate-cloud-init.yml || { echo "Create failed."; exit 1; }
 
-run:
-	for disk in jumpbox node0 node1 server; do \
-	  ./qemu/run.sh $$disk build/disks/$$disk.qcow2 build/cloud-init/$$disk/$$disk.iso || { echo "Failed to run VM $$disk."; exit 1; }; \
-	done
+setup: generate-cloud-init
+	ansible-playbook scripts/setup.yml || { echo "Setup failed."; exit 1; }
+
+run: setup
+	ansible-playbook scripts/run.yml || { echo "Run failed."; exit 1; }
 
 clean:
 	rm -rf build/ || { echo "Clean failed."; exit 1; }
