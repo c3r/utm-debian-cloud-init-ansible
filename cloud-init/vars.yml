@@ -2,7 +2,6 @@ dev_ssh_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF/fMaEyNAnCt4zD5dtVGn1r2Q8D/v
 
 cloud_user: dev              # default cloud user created by cloud-init
 
-network_mode: static        # dhcp | static
 network_interface: ens3     # network interface name inside the VM
 bridge_interface: en0
 

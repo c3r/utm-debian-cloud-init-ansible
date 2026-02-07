@@ -26,7 +26,6 @@
       loop: "{{ nodes | dict2items }}"
 
     - name: Validate static IPs
-      when: network_mode == "static"
       assert:
         that:
           - nodes | dict2items | map(attribute='value.ip') | unique | length
