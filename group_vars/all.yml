@@ -45,7 +45,7 @@ disk_format: qcow2
 base_image_name: debian-12-genericcloud-amd64.qcow2
 
 # Absolute path to the base cloud image
-base_image_path: "{{ playbook_dir }}/build/images/{{ base_image_name }}"
+base_image_path: "{{ playbook_dir }}/qemu/images/{{ base_image_name }}"
 
 
 # VM nodes
