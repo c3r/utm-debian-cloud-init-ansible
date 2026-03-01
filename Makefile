@@ -1,4 +1,4 @@
-.PHONY: help validate build generate-cloud-init create-disks bootstrap apply setup run stop kill-vms clean
+.PHONY: help check validate build generate-cloud-init create-disks bootstrap apply setup run test-connectivity stop kill-vms clean
 
 ANSIBLE_CONFIG := ansible/ansible.cfg
 ANSIBLE_VARS := -e @group_vars/all.yml
@@ -11,7 +11,8 @@ endef
 
 help:
 	@echo "Targets:"
-	@echo "  make validate           - validate scripts and ansible syntax"
+	@echo "  make check              - check scripts and ansible syntax"
+	@echo "  make validate           - run VMs and verify network connectivity"
 	@echo "  make generate-cloud-init- generate cloud-init artifacts"
 	@echo "  make create-disks       - create per-VM disks"
 	@echo "  make build              - generate artifacts + disks"
@@ -19,16 +20,21 @@ help:
 	@echo "  make apply              - apply idempotent guest config via ansible"
 	@echo "  make setup              - build + bootstrap"
 	@echo "  make run                - run all VMs in parallel"
+	@echo "  make test-connectivity  - verify network connectivity between VMs"
 	@echo "  make stop               - stop VMs started by scripts"
 	@echo "  make kill-vms           - hard-kill all running QEMU VMs"
 	@echo "  make clean              - remove build artifacts"
 
-validate:
+check:
 	$(call require_cmd,bash)
 	$(call require_cmd,ansible-playbook)
 	$(call require_cmd,yq)
 	bash -n scripts/*.sh
 	ANSIBLE_CONFIG=$(ANSIBLE_CONFIG) ansible-playbook -i localhost, ansible/playbooks/apply.yml --syntax-check $(ANSIBLE_VARS)
+
+validate: run test-connectivity
+	@echo "✓ Infrastructure validated: VMs running and connectivity verified"
+	@echo "  Next step: make apply (to deploy ansible config)"
 
 create-disks:
 	$(call require_cmd,yq)
@@ -57,6 +63,10 @@ setup: bootstrap
 run: build
 	$(call require_cmd,qemu-system-x86_64)
 	./scripts/run-vms.sh
+
+test-connectivity:
+	$(call require_cmd,ssh)
+	./scripts/test-connectivity.sh
 
 stop:
 	$(call require_cmd,yq)
