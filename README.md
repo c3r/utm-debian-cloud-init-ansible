@@ -35,19 +35,38 @@ Key variables in `group_vars/all.yml` can be customized for different hypervisor
 - `disk_create_command`: Disk creation tool (default: qemu-img). Swap for LVM, Ceph, etc.
 - `ssh_port`: SSH port for VM access (default: 22)
 
+## Workflow
+
+Two approaches, depending on your needs:
+
+### Quick validate (recommended first-run)
+This runs VMs and immediately validates connectivity:
+```bash
+make validate    # Runs: build → bootstrap → run → test-connectivity
+make apply  
+```
+
+### Step-by-step (debugging/iteration)
+Each target is independent, so you can compose them as needed:
+```bash
+make check                 # Validate syntax only (fast CI/CD check)
+make build                 # Generate disks and cloud-init artifacts  
+make bootstrap             # Boot VMs sequentially, wait for cloud-init
+make run                   # Start all 4 VMs in parallel
+make test-connectivity     # Verify network connectivity
+make apply                 # Deploy ansible config to all VMs
+```
+
+This follows the Unix philosophy: each target has a single responsibility. You can debug individual layers without retesting the entire stack.
+
 ## Setup
 1. Allow passwordless QEMU execution (required for vmnet-bridged):
         - `sudo ./setup-sudo.sh`
-2. Validate scripts and playbooks:
-        - `make validate`
-3. Build artifacts and disks:
-        - `make build`
-4. Bootstrap VMs sequentially (wait for cloud-init, then power off):
-        - `make bootstrap`
-5. Run all VMs in parallel:
-        - `make run`
-6. Apply idempotent in-guest config:
-        - `make apply`
+2. Check syntax and dependencies:
+        - `make check`
+3. Then choose your workflow:
+        - **Automated**: `make validate && make apply` (full pipeline)
+        - **Step-by-step**: `make build && make bootstrap && make run && make test-connectivity && make apply`
 
 ## Cleanup
 
