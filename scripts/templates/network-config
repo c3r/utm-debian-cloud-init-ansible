@@ -1,13 +1,13 @@
 version: 2
 ethernets:
-  {{ network_interface }}:
+  ${NETWORK_INTERFACE}:
     dhcp4: false
     dhcp6: false
     accept-ra: false
     addresses:
-      - {{ ip }}/24
+      - ${vm_ip}/24
     routes:
       - to: default
-        via: {{ gateway }}
+        via: ${GATEWAY}
     nameservers:
-      addresses: {{ dns }}
+      addresses: ${DNS_INLINE}
