@@ -15,6 +15,9 @@ while IFS='|' read -r vm_name vm_ip vm_mac; do
   vm_dir="${REPO_ROOT}/${CLOUD_INIT_DIR}/${vm_name}"
   mkdir -p "${vm_dir}"
 
+  # Export per-VM variables for envsubst substitution
+  export vm_name vm_ip vm_mac
+
 # Generate the cloud-init configuration files (user-data, meta-data, network-config) for this VM using envsubst to substitute environment variables in the templates. The generated files are saved in the VM's cloud-init directory. We use separate templates for user-data, meta-data, and network-config, which allow us to customize the configuration for each VM based on its name, IP address, and MAC address.
   envsubst < "${SCRIPT_DIR}/templates/user-data" > "${vm_dir}/user-data"
   envsubst < "${SCRIPT_DIR}/templates/meta-data" > "${vm_dir}/meta-data"

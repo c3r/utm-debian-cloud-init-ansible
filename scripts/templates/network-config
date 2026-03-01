@@ -10,4 +10,5 @@ ethernets:
       - to: default
         via: ${GATEWAY}
     nameservers:
-      addresses: ${DNS_INLINE}
+      addresses:
+${DNS_INLINE}

@@ -15,11 +15,16 @@ RUN_DIR="${REPO_ROOT}/build/run"
 LOG_DIR="${REPO_ROOT}/build/logs"
 mkdir -p "${RUN_DIR}" "${LOG_DIR}"
 
-# Loop through each VM defined in the configuration and bootstrap it
-# For each VM, we define the paths to its disk image, cloud-init seed ISO, log file, and PID file.
-# We then start the VM using qemu-system-x86_64 with the appropriate parameters, including the disk image, seed ISO, network configuration, and logging.
-# After starting the VM, we save its PID to a file for later management (e.g., stopping the VM).
-while IFS='|' read -r vm_name vm_ip vm_mac; do
+# Loop through each VM defined in the configuration
+# Read all VMs into an array to avoid stdin consumption issues
+vm_rows=()
+while IFS= read -r line; do
+  vm_rows+=("$line")
+done < <(node_rows)
+
+for vm_row in "${vm_rows[@]}"; do
+  IFS='|' read -r vm_name vm_ip vm_mac <<< "$vm_row"
+
   disk_image="${REPO_ROOT}/${DISK_DIR}/${vm_name}.${DISK_FORMAT}"
   seed_iso="${REPO_ROOT}/${CLOUD_INIT_DIR}/${vm_name}/${vm_name}.iso"
   log_file="${LOG_DIR}/${vm_name}.log"
@@ -48,8 +53,8 @@ while IFS='|' read -r vm_name vm_ip vm_mac; do
     -device "virtio-net-pci,netdev=net0,mac=${vm_mac}" \
     -boot order=c \
     -serial mon:stdio \
-    >"${log_file}" 2>&1 &
+    >"${log_file}" 2>&1 </dev/null &
 
   echo $! >"${pid_file}"
   echo "Started ${vm_name} (pid $(cat "${pid_file}"))"
-done < <(node_rows)
+done

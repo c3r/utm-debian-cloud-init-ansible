@@ -37,17 +37,24 @@ wait_for_ssh() {
 }
 
 # Loop through each VM defined in the configuration and bootstrap it
-while IFS='|' read -r vm_name vm_ip vm_mac; do
+# Read all VMs into an array to avoid stdin consumption issues
+vm_rows=()
+while IFS= read -r line; do
+  vm_rows+=("$line")
+done < <(node_rows)
 
-# Define paths and files for this VM
+for vm_row in "${vm_rows[@]}"; do
+  IFS='|' read -r vm_name vm_ip vm_mac <<< "$vm_row"
+
+  # Define paths and files for this VM
   disk_image="${REPO_ROOT}/${DISK_DIR}/${vm_name}.${DISK_FORMAT}"       # Path to the VM's disk image
-  seed_iso="${REPO_ROOT}/${CLOUD_INIT_DIR}/${vm_name}/${vm_name}.iso".  # Path to the cloud-init seed ISO
+  seed_iso="${REPO_ROOT}/${CLOUD_INIT_DIR}/${vm_name}/${vm_name}.iso"   # Path to the cloud-init seed ISO
   log_file="${LOG_DIR}/${vm_name}.log"                                  # Path to the log file for this VM
   pid_file="${RUN_DIR}/${vm_name}.pid"                                  # Path to the PID file for this VM
 
   echo "Bootstrapping ${vm_name} (${vm_ip})"
 
-# Start the VM
+  # Start the VM
   sudo -n qemu-system-x86_64 \
     -machine pc \
     -cpu max \
@@ -60,7 +67,7 @@ while IFS='|' read -r vm_name vm_ip vm_mac; do
     -device "virtio-net-pci,netdev=net0,mac=${vm_mac}" \
     -boot order=c \
     -serial mon:stdio \
-    >"${log_file}" 2>&1 &
+    >"${log_file}" 2>&1 </dev/null &
 
   echo $! >"${pid_file}"
 
@@ -98,4 +105,4 @@ while IFS='|' read -r vm_name vm_ip vm_mac; do
 # Clean up the PID file
   rm -f "${pid_file}" 
   echo "Bootstrap complete for ${vm_name}"
-done < <(node_rows)
+done

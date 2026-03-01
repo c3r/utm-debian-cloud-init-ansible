@@ -25,7 +25,7 @@ load_scalar_vars() {
   DISK_FORMAT=$(yq '.disk_format // "qcow2"' "${CONFIG_FILE}")
   BASE_IMAGE_PATH=$(yq '.base_image_path' "${CONFIG_FILE}")
   DEV_SSH_KEY=$(yq '.dev_ssh_key' "${CONFIG_FILE}")
-  DNS_INLINE=$(yq -r '.dns | join(", ")' "${CONFIG_FILE}")
+  DNS_INLINE=$(yq -r '.dns | map("      - " + .) | join("\n")' "${CONFIG_FILE}")
   
   export CLOUD_USER SSH_PORT NETWORK_INTERFACE GATEWAY BRIDGE_INTERFACE DISK_DIR CLOUD_INIT_DIR DISK_FORMAT BASE_IMAGE_PATH DEV_SSH_KEY DNS_INLINE
 }
