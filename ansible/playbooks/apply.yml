@@ -1,0 +1,20 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Build dynamic inventory from vars
+      add_host:
+        name: "{{ item.key }}"
+        ansible_host: "{{ item.value.ip }}"
+        ansible_user: "{{ cloud_user }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+      loop: "{{ nodes | dict2items }}"
+
+- hosts: all:!localhost
+  become: true
+  gather_facts: false
+
+  roles:
+    - common

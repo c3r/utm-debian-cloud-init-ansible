@@ -44,11 +44,11 @@ disk_format: qcow2
 
 # QEMU settings
 # -------------
-# Base cloud image filename (stored under build/images)
+# Base cloud image filename (stored under qemu/images)
 base_image_name: debian-12-genericcloud-amd64.qcow2
 
-# Absolute path to the base cloud image
-base_image_path: "{{ playbook_dir }}/qemu/images/{{ base_image_name }}"
+# Relative path to the base cloud image (relative to repo root)
+base_image_path: qemu/images/debian-12-genericcloud-amd64.qcow2
 
 # Disk creation command (hypervisor-agnostic)
 # Customize this to use different disk tools or formats

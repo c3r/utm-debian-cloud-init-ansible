@@ -1,12 +1,12 @@
 #cloud-config
-hostname: {{ name }}
+hostname: ${vm_name}
 
 users:
-  - name: {{ cloud_user }}
+  - name: ${CLOUD_USER}
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
     ssh_authorized_keys:
-      - {{ ssh_key }}
+      - ${DEV_SSH_KEY}
 
 package_update: true
 package_upgrade: false
