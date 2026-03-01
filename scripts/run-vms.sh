@@ -5,10 +5,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 source "${SCRIPT_DIR}/lib.sh"
 
-require_cmd python3
+require_cmd yq
 require_cmd sudo
 require_cmd qemu-system-x86_64
-require_python_yaml
 
 load_scalar_vars
 

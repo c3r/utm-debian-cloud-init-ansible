@@ -32,7 +32,7 @@ validate:
 
 create-disks:
 	$(call require_cmd,yq)
-	$(call require_cmd,python3)
+	$(call require_cmd,qemu-img)
 	./scripts/create-disks.sh
 
 generate-cloud-init:

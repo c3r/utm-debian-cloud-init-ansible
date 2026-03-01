@@ -9,9 +9,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 source "${SCRIPT_DIR}/lib.sh"
 
-require_cmd python3
+require_cmd yq
 require_cmd qemu-img
-require_python_yaml
 
 load_scalar_vars
 
@@ -28,6 +27,6 @@ while IFS= read -r vm_name; do
 
 # Create a new disk image based on the base image using qemu-img
 # The -f option specifies the format of the new disk image (e.g., qcow2), and the -b option specifies the base image to use as a template.
-  qemu-img create -f qcow2 -b "${BASE_IMAGE_PATH}" -F qcow2 "${target_image}"
+  qemu-img create -f qcow2 -b "${REPO_ROOT}/${BASE_IMAGE_PATH}" -F qcow2 "${target_image}"
   echo "Created disk: ${target_image}"
 done < <(node_names)
