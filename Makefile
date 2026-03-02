@@ -65,6 +65,8 @@ run: build
 	./scripts/run-vms.sh
 
 test-connectivity:
+	$(call require_cmd,bash)
+	$(call require_cmd,yq)
 	$(call require_cmd,ssh)
 	./scripts/test-connectivity.sh
 

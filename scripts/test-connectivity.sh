@@ -7,6 +7,7 @@ source "${SCRIPT_DIR}/lib.sh"
 
 require_cmd ssh
 require_cmd ping
+require_cmd yq
 
 load_scalar_vars
 
@@ -21,6 +22,10 @@ while IFS='|' read -r vm_name vm_ip vm_mac; do
   vm_macs+=("$vm_mac")
 done <<< "$nodes_output"
 
+if [ "${#vm_names[@]}" -eq 0 ]; then
+  echo "Error: no nodes found by node_rows; check group_vars/all.yml and related configuration." >&2
+  exit 1
+fi
 # Test SSH connectivity to all nodes first
 echo "Testing SSH connectivity to all nodes..."
 ssh_ok=true
