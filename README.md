@@ -42,7 +42,7 @@ Two approaches, depending on your needs:
 ### Quick validate (recommended first-run)
 This runs VMs and immediately validates connectivity:
 ```bash
-make validate    # Runs: build → bootstrap → run → test-connectivity
+make validate    # Runs: build → bootstrap → test-connectivity
 make apply  
 ```
 
