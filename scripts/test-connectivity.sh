@@ -6,7 +6,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 source "${SCRIPT_DIR}/lib.sh"
 
 require_cmd ssh
-require_cmd ping
+
 require_cmd yq
 
 load_scalar_vars
