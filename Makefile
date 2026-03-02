@@ -32,7 +32,7 @@ check:
 	bash -n scripts/*.sh
 	ANSIBLE_CONFIG=$(ANSIBLE_CONFIG) ansible-playbook -i localhost, ansible/playbooks/apply.yml --syntax-check $(ANSIBLE_VARS)
 
-validate: run test-connectivity
+validate: bootstrap test-connectivity
 	@echo "✓ Infrastructure validated: VMs running and connectivity verified"
 	@echo "  Next step: make apply (to deploy ansible config)"
 

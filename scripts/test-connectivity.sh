@@ -5,8 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 source "${SCRIPT_DIR}/lib.sh"
 
+require_cmd bash
 require_cmd ssh
-
 require_cmd yq
 
 load_scalar_vars
@@ -26,19 +26,32 @@ if [ "${#vm_names[@]}" -eq 0 ]; then
   echo "Error: no nodes found by node_rows; check group_vars/all.yml and related configuration." >&2
   exit 1
 fi
-# Test SSH connectivity to all nodes first
-echo "Testing SSH connectivity to all nodes..."
+
+# Test SSH connectivity to all nodes first (with retries, since make run backgrounds VMs)
+echo "Testing SSH connectivity to all nodes (with retries, VMs may still be booting)..."
 ssh_ok=true
 for i in "${!vm_names[@]}"; do
   vm_name=${vm_names[$i]}
   vm_ip=${vm_ips[$i]}
   
-  if ! ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-    "${CLOUD_USER}@${vm_ip}" 'echo OK' >/dev/null 2>&1; then
-    echo "✗ SSH to $vm_name ($vm_ip) failed" >&2
+  # Retry up to 5 times with 3s delay (total ~15s) since make run only backgrounds QEMU
+  attempt=1
+  while [ $attempt -le 5 ]; do
+    if ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+      -o Port="${SSH_PORT}" "${CLOUD_USER}@${vm_ip}" 'echo OK' >/dev/null 2>&1; then
+      echo "✓ SSH to $vm_name ($vm_ip) OK"
+      break
+    fi
+    if [ $attempt -lt 5 ]; then
+      echo "  Attempt $attempt/5 failed, retrying in 3s..."
+      sleep 3
+    fi
+    ((attempt++))
+  done
+  
+  if [ $attempt -gt 5 ]; then
+    echo "✗ SSH to $vm_name ($vm_ip) failed after 5 attempts" >&2
     ssh_ok=false
-  else
-    echo "✓ SSH to $vm_name ($vm_ip) OK"
   fi
 done
 
@@ -68,7 +81,7 @@ for i in "${!vm_names[@]}"; do
     
     # Test connectivity
     if ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-      "${CLOUD_USER}@${source_ip}" "ping -c 1 -W 1 ${dest_ip} >/dev/null 2>&1"; then
+      -o Port="${SSH_PORT}" "${CLOUD_USER}@${source_ip}" "ping -c 1 -W 1 \"${dest_ip}\" >/dev/null 2>&1"; then
       echo "✓ $source_name ($source_ip) → $dest_name ($dest_ip)"
     else
       echo "✗ $source_name ($source_ip) → $dest_name ($dest_ip) FAILED" >&2
